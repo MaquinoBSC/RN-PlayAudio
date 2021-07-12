@@ -1,14 +1,17 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Text, View, StyleSheet} from 'react-native';
 import Sound from 'react-native-sound';
-import TrackPlayer from 'react-native-track-player';
+import TrackPlayer, { Events } from 'react-native-track-player';
 import {NativeBaseProvider, Button, Center, Box} from 'native-base';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { log } from 'async';
 
 export default function App(){
+  const [Trackstatus, setTrackStatus]= useState(2);
   Sound.setCategory('Playback');
 
+  useEffect(()=> {
+    loadTrack();
+  }, []);
   
 
   // Load the sound file 'whoosh.mp3' from the app bundle
@@ -38,7 +41,8 @@ export default function App(){
   }
   
 
-  const start = async () => {
+
+  const loadTrack= async()=>{
     // Set up the player
     await TrackPlayer.setupPlayer();
 
@@ -50,10 +54,39 @@ export default function App(){
         artist: 'Track Artist',
         //artwork: require('track.png')
     });
+    console.log("Cargado");
+  }
 
+  const start = async () => {
     // Start playing it
-    await TrackPlayer.play();
-};
+    if(Trackstatus == 1 || Trackstatus == 0 || TrackPlayer== 2){
+      await loadTrack()
+      setTrackStatus(await TrackPlayer.getState());
+    }
+
+    await TrackPlayer.play()
+    setTrackStatus(await TrackPlayer.getState());
+  }
+
+  const pause= async()=> {
+    await TrackPlayer.pause();
+    setTrackStatus(await TrackPlayer.getState());
+  }
+
+  const stop= async()=> {
+    await TrackPlayer.stop();
+    setTrackStatus(await TrackPlayer.getState());
+  }
+
+  const state= async()=> {
+    console.log(await TrackPlayer.getCurrentTrack());
+    console.log(await TrackPlayer.getState());
+  }
+
+  TrackPlayer.addEventListener('playback-queue-ended', async()=> {
+    await TrackPlayer.pause();
+    setTrackStatus(await TrackPlayer.getState());
+  })
 
 
   return(
@@ -110,10 +143,36 @@ export default function App(){
               variant="solid"
               size="sm"
               colorScheme="secondary"
-              onPress={()=> start()}
+              onPress={()=> Trackstatus == 2 || Trackstatus== 1 || Trackstatus== 0 ? start() : pause()}
             >
               <FontAwesome5 
-                name={"play"}
+                name={(Trackstatus== 2 || Trackstatus== 1 || Trackstatus== 0) ? 'play' : 'pause'}
+              />
+            </Button>
+            {
+              Trackstatus == 3 ? (
+                <Button
+                  style={styles.button}
+                  variant="solid"
+                  size="sm"
+                  colorScheme="secondary"
+                  onPress={()=> stop()}
+                >
+                  <FontAwesome5 
+                  name="stop"
+                  />
+                </Button>
+              ) : null
+            }
+            <Button
+              style={styles.button}
+              variant="solid"
+              size="sm"
+              colorScheme="secondary"
+              onPress={()=> state()}
+            >
+              <FontAwesome5 
+              name="code"
               />
             </Button>
           </Box>
